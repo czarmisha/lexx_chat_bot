@@ -9,55 +9,68 @@ dotenv_path = os.path.join(_BASE_DIR, '.env')
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
 
-_db_host = os.environ['POSTGRES_HOST']
-_db_username = os.environ['POSTGRES_USERNAME']
-_db_password = os.environ['POSTGRES_PASSWORD']
-_db_name = os.environ['POSTGRES_DB']
-engine = create_engine(
-    f'postgresql://{_db_username}:{_db_password}@{_db_host}:5432/{_db_name}', echo=True)
+_db_filename = os.environ['DB_FILENAME']
+db_path = os.path.join(_BASE_DIR, _db_filename)
+engine = create_engine(f'sqlite:///{db_path}.db', echo=True)
 
 Base = declarative_base()
 Session = sessionmaker()
 
 
-class Group(Base):
-    __tablename__ = 'group'
+class User(Base):
+    __tablename__ = 'user'
 
     id = Column(SmallInteger, primary_key=True)
-    tg_id = Column(BigInteger, nullable=False)  # tg group id
-    name = Column(String(50), nullable=False)
-    calendar = relationship("Calendar", back_populates="group", uselist=False)
+    tg_id = Column(BigInteger, nullable=False)
+    name = Column(String(80), nullable=False)
+
+    topic = relationship("Topic", back_populates="user")
+    question = relationship("Question", back_populates="author")
 
     def __repr__(self):
-        return f'<Telegram group - {self.name}, id: {self.id}>'
+        return f'<User - {self.name}, id: {self.id}>'
 
 
-class Calendar(Base):
-    __tablename__ = 'calendar'
+class Topic(Base):
+    __tablename__ = 'topic'
 
     id = Column(SmallInteger, primary_key=True)
     name = Column(String(50), nullable=False)
-    group_id = Column(Integer, ForeignKey("group.id"))
-    group = relationship("Group", back_populates="calendar")
-    event = relationship("Event", back_populates="calendar")
+
+    user_id = Column(Integer, ForeignKey("user.id"))
+    user = relationship("User", back_populates="topic")
+    question = relationship("Question", back_populates="topic")
 
     def __repr__(self):
-        return f'<Calendar - name: {self.name}, group id: {self.group_id}>'
+        return f'<Topic: {self.name}>'
 
 
-class Event(Base):
-    __tablename__ = 'events'
+class Keyword(Base):
+    __tablename__ = 'keyword'
 
     id = Column(SmallInteger, primary_key=True)
     start = Column(DateTime, nullable=False)
     end = Column(DateTime, nullable=False)
     description = Column(String(255), nullable=False)
-    calendar_id = Column(Integer, ForeignKey("calendar.id"))
-    calendar = relationship("Calendar", back_populates="event")
-    author_id = Column(Integer, nullable=False)
-    author_firstname = Column(String(255), nullable=False)
-    author_username = Column(String(255), nullable=True)
-    is_archive = Column(Boolean, default=False, nullable=True)
+
+    author_id = Column(Integer, ForeignKey("user.id"))
+    author = relationship("User", back_populates="keyword")
 
     def __repr__(self):
-        return f'<Event - start: {self.start}, end: {self.end}>'
+        return f'<Keyword {self.value}>'
+
+
+class Question(Base):
+    __tablename__ = 'question'
+
+    id = Column(SmallInteger, primary_key=True)
+    date = Column(DateTime, nullable=False)
+    text = Column(String(255), nullable=False)
+
+    topic_id = Column(Integer, ForeignKey("topic.id"))
+    topic = relationship("Topic", back_populates="question")
+    author_id = Column(Integer, ForeignKey("user.id"))
+    author = relationship("User", back_populates="question")
+
+    def __repr__(self):
+        return f'<Question: {self.author_firstname} {self.text}>'
