@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
-from sqlalchemy import create_engine, Column, Integer, SmallInteger, String, DateTime, Boolean, ForeignKey, BigInteger
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean, ForeignKey, BigInteger
 
 _BASE_DIR = Path(__file__).resolve().parent.parent
 dotenv_path = os.path.join(_BASE_DIR, '.env')
@@ -20,7 +20,7 @@ Session = sessionmaker()
 class User(Base):
     __tablename__ = 'user'
 
-    id = Column(SmallInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     tg_id = Column(BigInteger, nullable=False)
     name = Column(String(80), nullable=False)
 
@@ -34,12 +34,13 @@ class User(Base):
 class Topic(Base):
     __tablename__ = 'topic'
 
-    id = Column(SmallInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
 
     user_id = Column(Integer, ForeignKey("user.id"))
     user = relationship("User", back_populates="topic")
     question = relationship("Question", back_populates="topic")
+    keyword = relationship("Keyword", back_populates="topic")
 
     def __repr__(self):
         return f'<Topic: {self.name}>'
@@ -48,8 +49,11 @@ class Topic(Base):
 class Keyword(Base):
     __tablename__ = 'keyword'
 
-    id = Column(SmallInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     value = Column(String(255), nullable=False)
+    
+    topic_id = Column(Integer, ForeignKey("topic.id"))
+    topic = relationship("Topic", back_populates="keyword")
 
     def __repr__(self):
         return f'<Keyword {self.value}>'
@@ -58,7 +62,7 @@ class Keyword(Base):
 class Question(Base):
     __tablename__ = 'question'
 
-    id = Column(SmallInteger, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     date = Column(DateTime, nullable=False)
     text = Column(String(255), nullable=False)
 

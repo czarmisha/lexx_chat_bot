@@ -15,9 +15,8 @@ if not df.empty:
         tg_id = int(row['Telegram Id'])
         name = row['Name']
 
-        stmt = select(User).where(User.tg_id == int(tg_id))
+        stmt = select(User).where(User.tg_id==int(tg_id))
         result = session.execute(stmt).scalars().all()
-        print('1231212312312312321312312', result)
         if result:
             print(f'{name} {tg_id} уже существует')
         else:
