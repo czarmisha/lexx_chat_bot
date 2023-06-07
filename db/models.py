@@ -20,7 +20,7 @@ Session = sessionmaker()
 class User(Base):
     __tablename__ = 'user'
 
-    id = Column(SmallInteger, primary_key=True)
+    id = Column(SmallInteger, primary_key=True, autoincrement=True)
     tg_id = Column(BigInteger, nullable=False)
     name = Column(String(80), nullable=False)
 
@@ -34,7 +34,7 @@ class User(Base):
 class Topic(Base):
     __tablename__ = 'topic'
 
-    id = Column(SmallInteger, primary_key=True)
+    id = Column(SmallInteger, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=False)
 
     user_id = Column(Integer, ForeignKey("user.id"))
@@ -48,13 +48,8 @@ class Topic(Base):
 class Keyword(Base):
     __tablename__ = 'keyword'
 
-    id = Column(SmallInteger, primary_key=True)
-    start = Column(DateTime, nullable=False)
-    end = Column(DateTime, nullable=False)
-    description = Column(String(255), nullable=False)
-
-    author_id = Column(Integer, ForeignKey("user.id"))
-    author = relationship("User", back_populates="keyword")
+    id = Column(SmallInteger, primary_key=True, autoincrement=True)
+    value = Column(String(255), nullable=False)
 
     def __repr__(self):
         return f'<Keyword {self.value}>'
@@ -63,7 +58,7 @@ class Keyword(Base):
 class Question(Base):
     __tablename__ = 'question'
 
-    id = Column(SmallInteger, primary_key=True)
+    id = Column(SmallInteger, primary_key=True, autoincrement=True)
     date = Column(DateTime, nullable=False)
     text = Column(String(255), nullable=False)
 
