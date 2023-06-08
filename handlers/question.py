@@ -1,6 +1,6 @@
 import logging
 from telegram import Update, ForceReply
-from telegram.ext import ContextTypes, CommandHandler
+from telegram.ext import ContextTypes, MessageHandler, filters
 
 from sqlalchemy import select
 from db.models import Session, engine, User
@@ -11,7 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     stmt = select(User).where(User.tg_id==int(user.id))
     result = session.execute(stmt).scalars().first()
@@ -26,4 +26,4 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ForceReply(selective=True),
     )
 
-start_handler = CommandHandler('start', start)
+question_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, question)
