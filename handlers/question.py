@@ -11,6 +11,7 @@ from telegram.ext import (
 
 from sqlalchemy import select
 from db.models import Session, engine, User
+from utils.analyze import AnalyzeQuestion
 
 session = Session(bind=engine)
 logging.basicConfig(
@@ -19,6 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 QUESTION, CLARIFICATION, ANSWER = range(3)
+analyze = AnalyzeQuestion(session)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -40,7 +42,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    print('!!!!!', update.message)
+    analyze.set_question(update.message.text)
+    topics = analyze.do_analyze()
+    print('##########', topics)
 
 
 async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
