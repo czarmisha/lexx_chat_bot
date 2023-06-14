@@ -22,7 +22,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     await update.message.reply_html(
-        f"Привет {user.mention_html()}!\nЗадай мне свой вопрос",
+        f"Привет {user.mention_html()}! Чем могу быть полезен? \n🤔 /question \n🗣 /feedback",
         reply_markup=ForceReply(selective=True),
     )
 
