@@ -1,5 +1,5 @@
-import logging
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, ForceReply
+import logging, datetime
+from telegram import Update, ForceReply, InlineKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
     MessageHandler,
@@ -10,8 +10,12 @@ from telegram.ext import (
 )
 
 from sqlalchemy import select
-from db.models import Session, engine, User
+from db.models import Session, engine, User, Question
 from utils.analyze import AnalyzeQuestion
+from utils.keyboards import (
+    topic_choice_keyboard,
+    another_question_keyboard,
+)
 
 session = Session(bind=engine)
 logging.basicConfig(
@@ -41,41 +45,90 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
     analyze.set_question(update.message.text)
     topics = analyze.do_analyze()
-    print('##########', topics)
+    if not topics:
+        # TODO: send to default manager
+        keyboard = another_question_keyboard()
+        update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+        update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+        return ANSWER
+    
+    keyboard = topic_choice_keyboard(topics)
+    update.message.reply_text(f"Уточните к какой теме относится ваш вопрос:", reply_markup=InlineKeyboardMarkup(keyboard))
+
+    return CLARIFICATION
 
 
 async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    query = update.callback_query
+    query.answer()
+
+    stmt = select(User).where(User.tg_id==int(update.effective_user.id))
+    author = session.execute(stmt).scalars().first()
+    if not author:
+        logger.info('error/ author is not find')
+        update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
+        return ConversationHandler.END
+
+    data = query.data.split('_')
+    topic_id = data[1]
+    user_id = data[-1]
+    stmt = select(User).where(User.id==int(user_id))
+    manager = session.execute(stmt).scalars().first()
+    if not manager:
+        pass
+        # TODO: send to default manager
+    else:
+        tg_id = manager.tg_id
+        context.bot.send_message(chat_id='', text='')
+    
+    question = Question(date=datetime.date.today(),
+                        text=analyze.question,
+                        topic_id=int(topic_id),
+                        author_id=author.id,
+                        )
+    session.add(question)
+    session.commit()
+
+    keyboard = another_question_keyboard()
+    update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+    update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    return ANSWER
 
 
 async def another_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    pass
+    query = update.callback_query
+    query.answer()
+
+    await update.message.reply_html("Задайте мне свой вопрос")
+    return QUESTION
 
 
 async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
+    query = update.callback_query
+    query.answer()
+
     await update.message.reply_html(
-        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n🤔 /question \n🗣 /feedback"
+        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
     )
 
+    return ConversationHandler.END
 
-async def answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    await update.message.reply_html(
-        f"Привет {user.mention_html()}!\nЗадайте мне свой вопрос",
-        reply_markup=ForceReply(selective=True),
+
+async def conv_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    query.answer()
+    await update.message.reply_text(
+        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
     )
+
+    return ConversationHandler.END
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Cancels and ends the conversation."""
-    user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
     await update.message.reply_text(
-        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n🤔 /question \n🗣 /feedback"
+        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
     )
 
     return ConversationHandler.END
@@ -87,11 +140,11 @@ conv_handler = ConversationHandler(
             QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, question)],
             CLARIFICATION: [
                 CallbackQueryHandler(clarification, pattern='^clarification_'),
-                CallbackQueryHandler(cancel, pattern='^cancel$'),],
+                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),],
             ANSWER: [
                 CallbackQueryHandler(another_question, pattern='^another_question_yes$'),
                 CallbackQueryHandler(finish, pattern='^another_question_no$'),
-                CallbackQueryHandler(cancel, pattern='^cancel$'),
+                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],

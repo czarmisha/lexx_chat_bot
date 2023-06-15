@@ -7,7 +7,6 @@ from db.models import Keyword, Topic
 
 class AnalyzeQuestion():
     def __init__(self, session) -> None:
-        self.topics = None
         self.session = session
         self.keywords = []
         self.set_keywords()
@@ -27,18 +26,10 @@ class AnalyzeQuestion():
         print('!!!!@@@@', self.keywords)
 
     def do_analyze(self):
-        # # Создаем экземпляр лемматизатора
-        # lemmatizer = WordNetLemmatizer()
-        # # Лемматизируем ключевые слова
-        # lemmatized_keywords = [lemmatizer.lemmatize(keyword.lower()) for keyword in self.keywords]
-        # # Преобразуем текст вопроса в список отдельных слов
-        # words = nltk.word_tokenize(self.question.lower())
-        # # Ищем совпадения ключевых слов в тексте вопроса
-        # matched_keywords = []
-        # for keyword in lemmatized_keywords:
-        #     keyword_words = nltk.word_tokenize(keyword)
-        #     if all(word in words for word in keyword_words):
-        #         matched_keywords.append(keyword)
+        """
+        pip install spacy[ru]
+        python -m spacy download ru_core_news_sm
+        """
         nlp = spacy.load("ru_core_news_sm")  # Загрузка предварительно обученной модели языка
         question_doc = nlp(self.question)
 
@@ -62,5 +53,9 @@ class AnalyzeQuestion():
         stmt = select(Topic).where(Topic.id.in_(ids))
         result = self.session.execute(stmt).scalars().all()
         print('!!!!!!!', 'get_topics_2', result)
-        self.topics = {topic.name: topic.user_id for topic in result}
+        self.topics = [{
+            'topic': topic.name,
+            'topic_id': topic.id,
+            'user_id': topic.user_id
+            } for topic in result]
         return self.topics
