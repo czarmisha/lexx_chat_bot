@@ -12,23 +12,10 @@ if os.path.exists(dotenv_path):
 _db_filename = os.environ['DB_FILENAME']
 db_path = os.path.join(_BASE_DIR, _db_filename)
 engine = create_engine(f'sqlite:///{db_path}.db', echo=True)
+default_manager_td_id = os.environ['DEFAULT_MANAGER_TG_ID']
 
 Base = declarative_base()
 Session = sessionmaker()
-
-
-class User(Base):
-    __tablename__ = 'user'
-
-    id = Column(Integer, primary_key=True)
-    tg_id = Column(BigInteger, nullable=False)
-    name = Column(String(80), nullable=False)
-
-    topic = relationship("Topic", back_populates="user")
-    question = relationship("Question", back_populates="author")
-
-    def __repr__(self):
-        return f'<User - {self.name}, id: {self.id}>'
 
 
 class Topic(Base):
@@ -37,13 +24,33 @@ class Topic(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
 
-    user_id = Column(Integer, ForeignKey("user.id"))
-    user = relationship("User", back_populates="topic")
+    tashkent_user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+    kyiv_user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+    
+    tashkent_user = relationship("User", back_populates="tashkent_topics", foreign_keys=[tashkent_user_id])
+    kyiv_user = relationship("User", back_populates="kyiv_topics", foreign_keys=[kyiv_user_id])
     question = relationship("Question", back_populates="topic")
     keyword = relationship("Keyword", back_populates="topic")
 
     def __repr__(self):
         return f'<Topic: {self.name}>'
+    
+
+class User(Base):
+    __tablename__ = 'user'
+
+    id = Column(Integer, primary_key=True)
+    tg_id = Column(BigInteger, nullable=False)
+    chat_id = Column(BigInteger, nullable=True)
+    city = Column(String(80), nullable=True)
+    name = Column(String(80), nullable=False)
+
+    tashkent_topics = relationship("Topic", back_populates="tashkent_user", foreign_keys="Topic.tashkent_user_id")
+    kyiv_topics = relationship("Topic", back_populates="kyiv_user", foreign_keys="Topic.kyiv_user_id")
+    question = relationship("Question", back_populates="author")
+
+    def __repr__(self):
+        return f'<User - {self.name}, id: {self.id}>'
 
 
 class Keyword(Base):

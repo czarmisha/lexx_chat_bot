@@ -15,6 +15,6 @@ token = os.environ['BOT_TOKEN']
 if __name__ == '__main__':
     application = Application.builder().token(token).build()
     application.add_handler(start.start_handler)
-    application.add_handler(question.conv_handler)
+    application.add_handler(question.question_handler)
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)

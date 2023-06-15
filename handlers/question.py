@@ -1,4 +1,5 @@
 import logging, datetime
+from dotenv import load_dotenv
 from telegram import Update, ForceReply, InlineKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
@@ -10,7 +11,7 @@ from telegram.ext import (
 )
 
 from sqlalchemy import select
-from db.models import Session, engine, User, Question
+from db.models import Session, engine, User, Question, default_manager_td_id
 from utils.analyze import AnalyzeQuestion
 from utils.keyboards import (
     topic_choice_keyboard,
@@ -45,10 +46,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    stmt = select(User).where(User.tg_id==int(update.effective_user.id))
+    author = session.execute(stmt).scalars().first()
+    if not author:
+        logger.info('error/ author is not find')
+        update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
+        return ConversationHandler.END
+
     analyze.set_question(update.message.text)
     topics = analyze.do_analyze()
     if not topics:
-        # TODO: send to default manager
+        stmt = select(User).where(User.tg_id==int(default_manager_td_id))
+        manager = session.execute(stmt).scalars().first()
+        chat_id = manager.chat_id
+        text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
+               f"{analyze.question}"
+        context.bot.send_message(chat_id=chat_id, text=text)
         keyboard = another_question_keyboard()
         update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
         update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -77,11 +90,17 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stmt = select(User).where(User.id==int(user_id))
     manager = session.execute(stmt).scalars().first()
     if not manager:
-        pass
-        # TODO: send to default manager
+        stmt = select(User).where(User.tg_id==int(default_manager_td_id))
+        manager = session.execute(stmt).scalars().first()
+        chat_id = manager.chat_id
+        text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
+               f"{analyze.question}"
+        context.bot.send_message(chat_id=chat_id, text=text)
     else:
-        tg_id = manager.tg_id
-        context.bot.send_message(chat_id='', text='')
+        chat_id = manager.chat_id
+        text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
+               f"{analyze.question}"
+        context.bot.send_message(chat_id=chat_id, text=text)
     
     question = Question(date=datetime.date.today(),
                         text=analyze.question,
@@ -134,7 +153,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
-conv_handler = ConversationHandler(
+question_handler = ConversationHandler(
         entry_points=[CommandHandler('question', start)],
         states={
             QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, question)],

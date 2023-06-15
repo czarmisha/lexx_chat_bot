@@ -27,3 +27,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 start_handler = CommandHandler('start', start)
+
+start_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, question)],
+            CLARIFICATION: [
+                CallbackQueryHandler(clarification, pattern='^clarification_'),
+                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),],
+            ANSWER: [
+                CallbackQueryHandler(another_question, pattern='^another_question_yes$'),
+                CallbackQueryHandler(finish, pattern='^another_question_no$'),
+                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),
+            ],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+    )

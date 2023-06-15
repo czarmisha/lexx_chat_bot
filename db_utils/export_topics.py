@@ -13,10 +13,11 @@ if not df.empty:
     topics = df.columns.to_list()
 
     for topic in topics:
-        if len(df[topic]) > 2:
+        if len(df[topic]) > 3:
             continue
         tg_id = int(df[topic][0])
         name = df[topic][1]
+        city = df[topic][2]
 
         stmt = select(Topic).where(Topic.name==topic)
         result = session.execute(stmt).scalars().all()
@@ -26,11 +27,15 @@ if not df.empty:
             stmt = select(User).where(User.tg_id==tg_id)
             user = session.execute(stmt).scalars().first()
             if not user:
-                user = User(tg_id=tg_id, name=name)
+                user = User(tg_id=tg_id, name=name, city=city)
                 session.add(user)
                 session.commit()
                 print(f'create {name} {tg_id}')
-            topic = Topic(name=topic, user_id=user.id)
+            if city == 'Tashkent':
+                topic = Topic(name=topic, tashkent_user_id=user.id)
+            else:
+                topic = Topic(name=topic, kyiv_user_id=user.id)
+
             session.add(topic)
             session.commit()
             print(f'create topic {topic}')
