@@ -12,7 +12,8 @@ if os.path.exists(dotenv_path):
 _db_filename = os.environ['DB_FILENAME']
 db_path = os.path.join(_BASE_DIR, _db_filename)
 engine = create_engine(f'sqlite:///{db_path}.db', echo=True)
-default_manager_td_id = os.environ['DEFAULT_MANAGER_TG_ID']
+default_manager_tashkent = os.environ['DEFAULT_MANAGER_KYIV']
+default_manager_kyiv = os.environ['DEFAULT_MANAGER_TASHKENT']
 
 Base = declarative_base()
 Session = sessionmaker()

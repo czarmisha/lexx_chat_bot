@@ -1,5 +1,4 @@
 import logging, datetime
-from dotenv import load_dotenv
 from telegram import Update, ForceReply, InlineKeyboardMarkup
 from telegram.ext import (
     ContextTypes,
@@ -11,7 +10,14 @@ from telegram.ext import (
 )
 
 from sqlalchemy import select
-from db.models import Session, engine, User, Question, default_manager_td_id
+from db.models import (
+    Session,
+    engine,
+    User,
+    Question,
+    default_manager_tashkent,
+    default_manager_kyiv,
+)
 from utils.analyze import AnalyzeQuestion
 from utils.keyboards import (
     topic_choice_keyboard,
@@ -61,8 +67,21 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     analyze.set_question(update.message.text)
     topics = analyze.do_analyze()
     if not topics:
-        stmt = select(User).where(User.tg_id==int(default_manager_td_id))
+        if author.city == 'Tashkent':
+            stmt = select(User).where(User.tg_id==int(default_manager_tashkent))
+        else:
+            stmt = select(User).where(User.tg_id==int(default_manager_kyiv))
+
         manager = session.execute(stmt).scalars().first()
+        if not manager:
+            logger.info('error/ manager is not find')
+            await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
+            return ConversationHandler.END
+        elif manager and not manager.chat_id:
+            logger.info('error/ manager chat_id is not find')
+            await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
+            return ConversationHandler.END
+
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
@@ -95,12 +114,20 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     stmt = select(User).where(User.id==int(user_id))
     manager = session.execute(stmt).scalars().first()
     if not manager:
-        stmt = select(User).where(User.tg_id==int(default_manager_td_id))
+        logger.info('error/ manager is not find')
+        if author.city == 'Tashkent':
+            stmt = select(User).where(User.tg_id==int(default_manager_tashkent))
+        else:
+            stmt = select(User).where(User.tg_id==int(default_manager_kyiv))
+
         manager = session.execute(stmt).scalars().first()
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
         await context.bot.send_message(chat_id=chat_id, text=text)
+    elif manager and not manager.chat_id:
+        logger.info('error/ manager chat_id is not find')
+        await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
     else:
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
