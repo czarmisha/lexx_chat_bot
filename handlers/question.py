@@ -39,7 +39,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     elif result and not result.chat_id:
         await update.message.reply_html(
-            f"Привет {user.mention_html()}!\n Вы не прошли регистрацию \nКоманда/start",
+            f"Привет {user.mention_html()}!\n Вы не прошли регистрацию \nКоманда для регистрации - /start",
             reply_markup=ForceReply(selective=True),
         )
 

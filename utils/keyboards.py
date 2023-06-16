@@ -18,3 +18,13 @@ def another_question_keyboard():
         ],
         [InlineKeyboardButton(f"✖️ Отмена", callback_data='cancel')],
     ]
+
+
+def city_keyboard():
+    return [
+        [
+            InlineKeyboardButton("Ташкент", callback_data=f"city_Tashkent"),
+            InlineKeyboardButton("Киев", callback_data=f"city_Kyiv"),
+        ],
+        [InlineKeyboardButton(f"✖️ Отмена", callback_data='cancel')],
+    ]
