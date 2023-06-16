@@ -91,6 +91,32 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
         return ANSWER
     
+    if len(topics) == 1:
+        searched_topic = topics[0]
+        if author.city == 'Tashkent':
+            stmt = select(User).where(User.id==int(searched_topic.tashkent_user_id))
+        else:
+            stmt = select(User).where(User.id==int(searched_topic.kyiv_user_id))
+
+        manager = session.execute(stmt).scalars().first()
+        if not manager:
+            logger.info('error/ manager is not find')
+            await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
+            return ConversationHandler.END
+        elif manager and not manager.chat_id:
+            logger.info('error/ manager chat_id is not find')
+            await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
+            return ConversationHandler.END
+
+        chat_id = manager.chat_id
+        text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
+               f"{analyze.question}"
+        await context.bot.send_message(chat_id=chat_id, text=text)
+        keyboard = another_question_keyboard()
+        await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+        await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+        return ANSWER
+    
     keyboard = topic_choice_keyboard(topics)
     await update.message.reply_text(f"Уточните к какой теме относится ваш вопрос:", reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -110,8 +136,13 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = query.data.split('_')
     topic_id = data[1]
-    user_id = data[-1]
-    stmt = select(User).where(User.id==int(user_id))
+    tashkent_user_id = data[2]
+    kyiv_user_id = data[3]
+    if author.city == 'Tashkent':
+        stmt = select(User).where(User.id==int(tashkent_user_id))
+    else:
+        stmt = select(User).where(User.id==int(kyiv_user_id))
+
     manager = session.execute(stmt).scalars().first()
     if not manager:
         logger.info('error/ manager is not find')

@@ -56,6 +56,7 @@ class AnalyzeQuestion():
         self.topics = [{
             'topic': topic.name,
             'topic_id': topic.id,
-            'user_id': topic.user_id
+            'tashkent_user_id': topic.tashkent_user_id,
+            'kyiv_user_id': topic.kyiv_user_id,
             } for topic in result]
         return self.topics
