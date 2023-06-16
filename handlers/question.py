@@ -37,6 +37,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Привет {user.mention_html()}!\n У вас нет доступа. Обратитесь к администратору",
             reply_markup=ForceReply(selective=True),
         )
+    elif result and not result.chat_id:
+        await update.message.reply_html(
+            f"Привет {user.mention_html()}!\n Вы не прошли регистрацию \nКоманда/start",
+            reply_markup=ForceReply(selective=True),
+        )
 
     await update.message.reply_html(
         f"Привет {user.mention_html()}!\nЗадайте мне свой вопрос",
@@ -50,7 +55,7 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     author = session.execute(stmt).scalars().first()
     if not author:
         logger.info('error/ author is not find')
-        update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
+        await update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
         return ConversationHandler.END
 
     analyze.set_question(update.message.text)
@@ -61,14 +66,14 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
-        context.bot.send_message(chat_id=chat_id, text=text)
+        await context.bot.send_message(chat_id=chat_id, text=text)
         keyboard = another_question_keyboard()
-        update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
-        update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+        await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+        await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
         return ANSWER
     
     keyboard = topic_choice_keyboard(topics)
-    update.message.reply_text(f"Уточните к какой теме относится ваш вопрос:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(f"Уточните к какой теме относится ваш вопрос:", reply_markup=InlineKeyboardMarkup(keyboard))
 
     return CLARIFICATION
 
@@ -81,7 +86,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     author = session.execute(stmt).scalars().first()
     if not author:
         logger.info('error/ author is not find')
-        update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
+        await update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
         return ConversationHandler.END
 
     data = query.data.split('_')
@@ -95,12 +100,12 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
-        context.bot.send_message(chat_id=chat_id, text=text)
+        await context.bot.send_message(chat_id=chat_id, text=text)
     else:
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
-        context.bot.send_message(chat_id=chat_id, text=text)
+        await context.bot.send_message(chat_id=chat_id, text=text)
     
     question = Question(date=datetime.date.today(),
                         text=analyze.question,
@@ -111,8 +116,8 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.commit()
 
     keyboard = another_question_keyboard()
-    update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
-    update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+    await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
     return ANSWER
 
 

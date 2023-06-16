@@ -1,6 +1,12 @@
 import logging
 from telegram import Update, ForceReply
-from telegram.ext import ContextTypes, CommandHandler
+from telegram.ext import (
+    ContextTypes,
+    CommandHandler,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
 
 from sqlalchemy import select
 from db.models import Session, engine, User
@@ -26,7 +32,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=ForceReply(selective=True),
     )
 
-start_handler = CommandHandler('start', start)
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text(
+        "Вы отменили регистрацию \n/start"
+    )
+
+    return ConversationHandler.END
 
 start_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
