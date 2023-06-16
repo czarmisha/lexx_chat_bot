@@ -86,7 +86,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     author = session.execute(stmt).scalars().first()
     if not author:
         logger.info('error/ author is not find')
-        await update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
+        await query.edit_message_text(text="Произошел сбой в программе. Сообщите администратору")
         return ConversationHandler.END
 
     data = query.data.split('_')
@@ -125,7 +125,7 @@ async def another_question(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     query.answer()
 
-    await update.message.reply_html("Задайте мне свой вопрос")
+    await query.edit_message_text(text="Задайте мне свой вопрос")
     return QUESTION
 
 
@@ -133,8 +133,8 @@ async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     query.answer()
 
-    await update.message.reply_html(
-        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
+    await query.edit_message_text(
+        text="Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
     )
 
     return ConversationHandler.END
@@ -143,8 +143,8 @@ async def finish(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def conv_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     query.answer()
-    await update.message.reply_text(
-        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
+    await query.edit_message_text(
+        text="Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
     )
 
     return ConversationHandler.END

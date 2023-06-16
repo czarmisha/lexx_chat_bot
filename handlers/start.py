@@ -1,5 +1,6 @@
 import logging
 from telegram import Update, ForceReply, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.ext import (
     ContextTypes,
     CommandHandler,
@@ -34,6 +35,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session.add(result)
         session.commit()
 
+    if result.city:
+        await update.message.reply_html(
+            f"Привет {user.mention_html()}! Чем могу быть полезен? \n🤔 /question \n🗣 /feedback",
+        )
+        return ConversationHandler.END
+
     keyboard = city_keyboard()
     await update.message.reply_text("Выберите город", reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -51,10 +58,8 @@ async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.add(result)
     session.commit()
 
-    await update.message.reply_html(
-        f"Привет {user.mention_html()}! Чем могу быть полезен? \n🤔 /question \n🗣 /feedback",
-        reply_markup=ForceReply(selective=True),
-    )
+    await query.edit_message_text(
+        text=f"Привет {user.mention_html()}! Чем могу быть полезен? \n🤔 /question \n🗣 /feedback", parse_mode=ParseMode.HTML)
 
     return ConversationHandler.END
 
@@ -62,8 +67,8 @@ async def city(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def conv_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     query.answer()
-    await update.message.reply_text(
-        "Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
+    await query.edit_message_text(
+        text="Обращайтесь, если будут другие вопросы. Хорошего дня! \n\n🤔 Задать вопрос: /question \n🗣 Оставить отзыв: /feedback"
     )
 
     return ConversationHandler.END

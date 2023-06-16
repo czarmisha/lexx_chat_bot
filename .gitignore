@@ -1,2 +1,5 @@
 venv/
 .env
+__pycahe__/
+*/__pycahe__/
+*/*/__pycahe__/
