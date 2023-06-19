@@ -28,3 +28,12 @@ def city_keyboard():
         ],
         [InlineKeyboardButton(f"✖️ Отмена", callback_data='cancel')],
     ]
+
+
+def channel_choice_keyboard(channels):
+    return [
+        *[[
+            InlineKeyboardButton(f"▶️ {channel['name']}", callback_data=f"channel_{channel['id']}_{channel['name']}")
+        ] for channel in channels],
+        [InlineKeyboardButton(f"✖️ Отмена", callback_data='cancel')],
+    ]

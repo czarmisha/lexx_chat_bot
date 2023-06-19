@@ -15,6 +15,7 @@ from db.models import (
     engine,
     User,
     Question,
+    Channel,
     default_manager_tashkent,
     default_manager_kyiv,
 )
@@ -22,6 +23,7 @@ from utils.analyze import AnalyzeQuestion
 from utils.keyboards import (
     topic_choice_keyboard,
     another_question_keyboard,
+    channel_choice_keyboard,
 )
 
 session = Session(bind=engine)
@@ -30,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-QUESTION, CLARIFICATION, ANSWER = range(3)
+QUESTION, CLARIFICATION, CHANNEL, ANSWER = range(4)
 analyze = AnalyzeQuestion(session)
 
 
@@ -108,6 +110,20 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
             return ConversationHandler.END
 
+        #TODO: проверка и обработка особых тем вопросов
+        if searched_topic.name == 'Каналы':
+            context.chat_data['manager_chat_id'] = manager.chat_id
+            context.chat_data['author_name'] = author.name
+            context.chat_data['author_tg_id'] = author.tg_id
+            context.chat_data['author_id'] = author.id
+            context.chat_data['topic_id'] = searched_topic.id
+            stmt = select(Channel)
+            channels = session.execute(stmt).scalars().all()
+            channel_values = [{'id': channel.id, 'name': channel.name} for channel in channels]
+            keyboard = channel_choice_keyboard(channel_values)
+            await update.message.reply_text(f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
+            return CHANNEL
+            
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
@@ -160,6 +176,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info('error/ manager chat_id is not find')
         await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
     else:
+        #TODO: проверка и обработка особых тем вопросов
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
@@ -169,6 +186,61 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         text=analyze.question,
                         topic_id=int(topic_id),
                         author_id=author.id,
+                        )
+    session.add(question)
+    session.commit()
+
+    keyboard = another_question_keyboard()
+    await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+    await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    return ANSWER
+
+
+async def channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    query.answer()
+
+    data = query.data.split('_')
+    channel_name = data[2]
+    if 'manager_chat_id' in context.chat_data:
+        chat_id = context.chat_data['manager_chat_id']
+    else:
+        logger.error('manager not found at CHANNEL state')
+        return ConversationHandler.END
+    
+    if 'author_name' in context.chat_data:
+        author_name = context.chat_data['author_name']
+    else:
+        logger.error('author_name not found at CHANNEL state')
+        return ConversationHandler.END
+    
+    if 'author_tg_id' in context.chat_data:
+        author_tg_id = context.chat_data['author_tg_id']
+    else:
+        logger.error('author_tg_id not found at CHANNEL state')
+        return ConversationHandler.END
+    
+    if 'author_id' in context.chat_data:
+        author_id = context.chat_data['author_id']
+    else:
+        logger.error('author_tg_id not found at CHANNEL state')
+        return ConversationHandler.END
+    
+    if 'topic_id' in context.chat_data:
+        topic_id = context.chat_data['topic_id']
+    else:
+        logger.error('author_tg_id not found at CHANNEL state')
+        return ConversationHandler.END
+
+    text = f"Новый вопрос от {author_name}({author_tg_id})\n" \
+           f"Канал: {channel_name}\n\n" \
+           f"{analyze.question}"
+    await context.bot.send_message(chat_id=chat_id, text=text)
+    
+    question = Question(date=datetime.date.today(),
+                        text=analyze.question,
+                        topic_id=int(topic_id),
+                        author_id=author_id,
                         )
     session.add(question)
     session.commit()
@@ -222,7 +294,12 @@ question_handler = ConversationHandler(
             QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, question)],
             CLARIFICATION: [
                 CallbackQueryHandler(clarification, pattern='^clarification_'),
-                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),],
+                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),
+            ],
+            CHANNEL: [
+                CallbackQueryHandler(channel, pattern='^channel_'),
+                CallbackQueryHandler(conv_cancel, pattern='^cancel$'),
+            ],
             ANSWER: [
                 CallbackQueryHandler(another_question, pattern='^another_question_yes$'),
                 CallbackQueryHandler(finish, pattern='^another_question_no$'),

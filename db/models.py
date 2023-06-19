@@ -81,3 +81,13 @@ class Question(Base):
 
     def __repr__(self):
         return f'<Question: {self.author_firstname} {self.text}>'
+    
+
+class Channel(Base):
+    __tablename__ = 'channel'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+
+    def __repr__(self):
+        return f'<Channel {self.name}>'
