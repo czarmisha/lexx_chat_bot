@@ -27,6 +27,7 @@ class Topic(Base):
 
     tashkent_user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
     kyiv_user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+    url_answer = Column(String(256), nullable=True)
     
     tashkent_user = relationship("User", back_populates="tashkent_topics", foreign_keys=[tashkent_user_id])
     kyiv_user = relationship("User", back_populates="kyiv_topics", foreign_keys=[kyiv_user_id])
