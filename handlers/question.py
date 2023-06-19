@@ -45,11 +45,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Привет {user.mention_html()}!\n У вас нет доступа. Обратитесь к администратору",
             reply_markup=ForceReply(selective=True),
         )
+        return ConversationHandler.END
+        
     elif result and not result.chat_id:
         await update.message.reply_html(
-            f"Привет {user.mention_html()}!\n Вы не прошли регистрацию \nКоманда для регистрации - /start",
+            f"Привет {user.mention_html()}!\nВы не прошли регистрацию \nКоманда для регистрации - /start",
             reply_markup=ForceReply(selective=True),
         )
+        return ConversationHandler.END
 
     await update.message.reply_html(
         f"Привет {user.mention_html()}!\nЗадайте мне свой вопрос",
@@ -154,6 +157,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     topic_id = data[1]
     tashkent_user_id = data[2]
     kyiv_user_id = data[3]
+    topic_name = data[4]
     if author.city == 'Tashkent':
         stmt = select(User).where(User.id==int(tashkent_user_id))
     else:
@@ -174,9 +178,21 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=text)
     elif manager and not manager.chat_id:
         logger.info('error/ manager chat_id is not find')
-        await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
+        await query.edit_message_text(text="Произошла ошибка, обратитесь к администратору")
+        return ConversationHandler.END
     else:
-        #TODO: проверка и обработка особых тем вопросов
+        if topic_name == 'Каналы':
+            context.chat_data['manager_chat_id'] = manager.chat_id
+            context.chat_data['author_name'] = author.name
+            context.chat_data['author_tg_id'] = author.tg_id
+            context.chat_data['author_id'] = author.id
+            context.chat_data['topic_id'] = topic_id
+            stmt = select(Channel)
+            channels = session.execute(stmt).scalars().all()
+            channel_values = [{'id': channel.id, 'name': channel.name} for channel in channels]
+            keyboard = channel_choice_keyboard(channel_values)
+            await query.edit_message_text(text=f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
+            return CHANNEL
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
@@ -191,8 +207,8 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.commit()
 
     keyboard = another_question_keyboard()
-    await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
-    await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.edit_message_text(text="Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+    await query.edit_message_text(text="Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
     return ANSWER
 
 
@@ -246,8 +262,8 @@ async def channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.commit()
 
     keyboard = another_question_keyboard()
-    await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
-    await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.edit_message_text(text="Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
+    await query.edit_message_text(text="Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
     return ANSWER
 
 

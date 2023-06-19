@@ -4,7 +4,7 @@ from telegram import InlineKeyboardButton
 def topic_choice_keyboard(topics):
     return [
         *[[
-            InlineKeyboardButton(f"▶️ {topic['topic']}", callback_data=f"clarification_{topic['topic_id']}_{topic['tashkent_user_id']}_{topic['kyiv_user_id']}")
+            InlineKeyboardButton(f"▶️ {topic['topic']}", callback_data=f"clarification_{topic['topic_id']}_{topic['tashkent_user_id']}_{topic['kyiv_user_id']}_{topic['topic']}")
         ] for topic in topics],
         [InlineKeyboardButton(f"✖️ Отмена", callback_data='cancel')],
     ]
