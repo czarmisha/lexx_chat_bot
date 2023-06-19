@@ -12,6 +12,7 @@ from telegram.ext import (
 from sqlalchemy import select
 from db.models import (
     Session,
+    Topic,
     engine,
     User,
     Question,
@@ -97,6 +98,7 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ANSWER
     
     if len(topics) == 1:
+        # TODO: если топик особый (требуется другой ответ типа ссылки и тд) то добавить этот функционал
         searched_topic = topics[0]
         if author.city == 'Tashkent':
             stmt = select(User).where(User.id==int(searched_topic.tashkent_user_id))
@@ -178,10 +180,12 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = query.data.split('_')
     topic_id = data[1]
+    stmt = select(Topic).where(Topic.id==int(topic_id))
+    topic = session.execute(stmt).scalars().first()
+    # TODO: если топик особый (требуется другой ответ типа ссылки и тд) то добавить этот функционал
     tashkent_user_id = data[2]
     kyiv_user_id = data[3]
     topic_name = data[4]
-    url_answer = data[5]  # TODO:
     if author.city == 'Tashkent':
         stmt = select(User).where(User.id==int(tashkent_user_id))
     else:
@@ -218,7 +222,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text=f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
         return CHANNEL
     
-    elif url_answer:
+    elif topic.url_answer:
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
             f"{analyze.question}\n\nСсылка на ресурс уже отправлена пользователю"
@@ -350,7 +354,7 @@ question_handler = ConversationHandler(
         states={
             QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, question)],
             CLARIFICATION: [
-                CallbackQueryHandler(clarification, pattern='^clar_'),
+                CallbackQueryHandler(clarification, pattern='^clarification_'),
                 CallbackQueryHandler(conv_cancel, pattern='^cancel$'),
             ],
             CHANNEL: [
