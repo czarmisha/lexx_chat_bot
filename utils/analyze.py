@@ -58,5 +58,6 @@ class AnalyzeQuestion():
             'topic_id': topic.id,
             'tashkent_user_id': topic.tashkent_user_id,
             'kyiv_user_id': topic.kyiv_user_id,
+            'url': topic.url_answer if topic.url_answer else ''
             } for topic in result]
         return self.topics

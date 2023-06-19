@@ -113,7 +113,6 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
             return ConversationHandler.END
 
-        #TODO: проверка и обработка особых тем вопросов
         if searched_topic.name == 'Каналы':
             context.chat_data['manager_chat_id'] = manager.chat_id
             context.chat_data['author_name'] = author.name
@@ -126,11 +125,35 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard = channel_choice_keyboard(channel_values)
             await update.message.reply_text(f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
             return CHANNEL
+
+        elif searched_topic.url_answer:
+            chat_id = manager.chat_id
+            text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
+                f"{analyze.question}\n\nСсылка на ресурс уже отправлена пользователю"
+            await context.bot.send_message(chat_id=chat_id, text=text)
+            question = Question(date=datetime.date.today(),
+                        text=analyze.question,
+                        topic_id=int(searched_topic.id),
+                        author_id=author.id,
+                        )
+            session.add(question)
+            session.commit()
+            keyboard = another_question_keyboard()
+            await update.message.reply_text(f"Ответы по вашему вопросу уже есть по этой ссылке:\n{searched_topic.url_answer}")
+            await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+            return ANSWER
             
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                f"{analyze.question}"
         await context.bot.send_message(chat_id=chat_id, text=text)
+        question = Question(date=datetime.date.today(),
+                        text=analyze.question,
+                        topic_id=int(searched_topic.id),
+                        author_id=author.id,
+                        )
+        session.add(question)
+        session.commit()
         keyboard = another_question_keyboard()
         await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
         await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -158,6 +181,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tashkent_user_id = data[2]
     kyiv_user_id = data[3]
     topic_name = data[4]
+    url_answer = data[5]  # TODO:
     if author.city == 'Tashkent':
         stmt = select(User).where(User.id==int(tashkent_user_id))
     else:
@@ -180,24 +204,41 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info('error/ manager chat_id is not find')
         await query.edit_message_text(text="Произошла ошибка, обратитесь к администратору")
         return ConversationHandler.END
-    else:
-        if topic_name == 'Каналы':
-            context.chat_data['manager_chat_id'] = manager.chat_id
-            context.chat_data['author_name'] = author.name
-            context.chat_data['author_tg_id'] = author.tg_id
-            context.chat_data['author_id'] = author.id
-            context.chat_data['topic_id'] = topic_id
-            stmt = select(Channel)
-            channels = session.execute(stmt).scalars().all()
-            channel_values = [{'id': channel.id, 'name': channel.name} for channel in channels]
-            keyboard = channel_choice_keyboard(channel_values)
-            await query.edit_message_text(text=f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
-            return CHANNEL
+    
+    if topic_name == 'Каналы':
+        context.chat_data['manager_chat_id'] = manager.chat_id
+        context.chat_data['author_name'] = author.name
+        context.chat_data['author_tg_id'] = author.tg_id
+        context.chat_data['author_id'] = author.id
+        context.chat_data['topic_id'] = topic_id
+        stmt = select(Channel)
+        channels = session.execute(stmt).scalars().all()
+        channel_values = [{'id': channel.id, 'name': channel.name} for channel in channels]
+        keyboard = channel_choice_keyboard(channel_values)
+        await query.edit_message_text(text=f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
+        return CHANNEL
+    
+    elif url_answer:
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
-               f"{analyze.question}"
+            f"{analyze.question}\n\nСсылка на ресурс уже отправлена пользователю"
         await context.bot.send_message(chat_id=chat_id, text=text)
+        question = Question(date=datetime.date.today(),
+                    text=analyze.question,
+                    topic_id=int(topic_id),
+                    author_id=author.id,
+                    )
+        session.add(question)
+        session.commit()
+        keyboard = another_question_keyboard()
+        await update.message.reply_text(f"Ответы по вашему вопросу уже есть по этой ссылке:\n{url_answer}")
+        await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+        return ANSWER
     
+    chat_id = manager.chat_id
+    text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
+            f"{analyze.question}"
+    await context.bot.send_message(chat_id=chat_id, text=text)
     question = Question(date=datetime.date.today(),
                         text=analyze.question,
                         topic_id=int(topic_id),
@@ -309,7 +350,7 @@ question_handler = ConversationHandler(
         states={
             QUESTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, question)],
             CLARIFICATION: [
-                CallbackQueryHandler(clarification, pattern='^clarification_'),
+                CallbackQueryHandler(clarification, pattern='^clar_'),
                 CallbackQueryHandler(conv_cancel, pattern='^cancel$'),
             ],
             CHANNEL: [
