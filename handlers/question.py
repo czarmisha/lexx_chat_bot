@@ -101,9 +101,9 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # TODO: если топик особый (требуется другой ответ типа ссылки и тд) то добавить этот функционал
         searched_topic = topics[0]
         if author.city == 'Tashkent':
-            stmt = select(User).where(User.id==int(searched_topic.tashkent_user_id))
+            stmt = select(User).where(User.id==int(searched_topic['tashkent_user_id']))
         else:
-            stmt = select(User).where(User.id==int(searched_topic.kyiv_user_id))
+            stmt = select(User).where(User.id==int(searched_topic['kyiv_user_id']))
 
         manager = session.execute(stmt).scalars().first()
         if not manager:
@@ -115,12 +115,12 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("Произошла ошибка, обратитесь к администратору")
             return ConversationHandler.END
 
-        if searched_topic.name == 'Каналы':
+        if searched_topic['topic'] == 'Каналы':
             context.chat_data['manager_chat_id'] = manager.chat_id
             context.chat_data['author_name'] = author.name
             context.chat_data['author_tg_id'] = author.tg_id
             context.chat_data['author_id'] = author.id
-            context.chat_data['topic_id'] = searched_topic.id
+            context.chat_data['topic_id'] = searched_topic['topic_id']
             stmt = select(Channel)
             channels = session.execute(stmt).scalars().all()
             channel_values = [{'id': channel.id, 'name': channel.name} for channel in channels]
@@ -128,20 +128,20 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(f"Уточните в какой канал вас добавить:", reply_markup=InlineKeyboardMarkup(keyboard))
             return CHANNEL
 
-        elif searched_topic.url_answer:
+        elif searched_topic['url']:
             chat_id = manager.chat_id
             text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
                 f"{analyze.question}\n\nСсылка на ресурс уже отправлена пользователю"
             await context.bot.send_message(chat_id=chat_id, text=text)
             question = Question(date=datetime.date.today(),
                         text=analyze.question,
-                        topic_id=int(searched_topic.id),
+                        topic_id=int(searched_topic['topic_id']),
                         author_id=author.id,
                         )
             session.add(question)
             session.commit()
             keyboard = another_question_keyboard()
-            await update.message.reply_text(f"Ответы по вашему вопросу уже есть по этой ссылке:\n{searched_topic.url_answer}")
+            await update.message.reply_text(f"Ответы по вашему вопросу уже есть по этой ссылке:\n{searched_topic['url']}")
             await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
             return ANSWER
             
@@ -151,7 +151,7 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=text)
         question = Question(date=datetime.date.today(),
                         text=analyze.question,
-                        topic_id=int(searched_topic.id),
+                        topic_id=int(searched_topic['topic_id']),
                         author_id=author.id,
                         )
         session.add(question)
@@ -235,8 +235,8 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session.add(question)
         session.commit()
         keyboard = another_question_keyboard()
-        await update.message.reply_text(f"Ответы по вашему вопросу уже есть по этой ссылке:\n{url_answer}")
-        await update.message.reply_text("Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+        await context.bot.send_message(chat_id=author.chat_id, text=f"Ответы по вашему вопросу уже есть по этой ссылке:\n{topic.url_answer}")
+        await query.edit_message_text(text="Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
         return ANSWER
     
     chat_id = manager.chat_id
