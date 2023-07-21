@@ -90,7 +90,8 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
-               f"{analyze.question}"
+               f"{analyze.question}\n\n" \
+               f"Тема не найдена"
         await context.bot.send_message(chat_id=chat_id, text=text)
         keyboard = another_question_keyboard()
         await update.message.reply_text("Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
@@ -147,7 +148,8 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
         chat_id = manager.chat_id
         text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
-               f"{analyze.question}"
+               f"{analyze.question}\n\n" \
+               f"Тема: {searched_topic['topic']}"
         await context.bot.send_message(chat_id=chat_id, text=text)
         question = Question(date=datetime.date.today(),
                         text=analyze.question,
@@ -241,7 +243,8 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     chat_id = manager.chat_id
     text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
-            f"{analyze.question}"
+            f"{analyze.question}\n\n" \
+            f"Тема: {topic_name}"
     await context.bot.send_message(chat_id=chat_id, text=text)
     question = Question(date=datetime.date.today(),
                         text=analyze.question,
@@ -252,8 +255,8 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.commit()
 
     keyboard = another_question_keyboard()
-    await query.edit_message_text(text="Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
-    await query.edit_message_text(text="Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    text = "Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼\n\nЕсть ли у вас еще вопросы?"
+    await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
     return ANSWER
 
 
@@ -295,7 +298,8 @@ async def channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = f"Новый вопрос от {author_name}({author_tg_id})\n" \
            f"Канал: {channel_name}\n\n" \
-           f"{analyze.question}"
+           f"{analyze.question}\n\n" \
+            f"Тема: добавить в канал"
     await context.bot.send_message(chat_id=chat_id, text=text)
     
     question = Question(date=datetime.date.today(),
@@ -307,8 +311,8 @@ async def channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     session.commit()
 
     keyboard = another_question_keyboard()
-    await query.edit_message_text(text="Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼")
-    await query.edit_message_text(text="Есть ли у вас еще вопросы?", reply_markup=InlineKeyboardMarkup(keyboard))
+    text = "Нужный отдел поможет тебе с этим. Они уже получили ваш запрос и напишут вам в ближайшее время🙌🏼\n\nЕсть ли у вас еще вопросы?"
+    await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
     return ANSWER
 
 
