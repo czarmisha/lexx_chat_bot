@@ -1,0 +1,65 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+name: Chat bot
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.10"
+    - name: Installing OS dependencies
+      run: |
+        sudo apt-get install libxml2-dev libxslt-dev python-dev python3-testresources
+
+    - name: Install dependencies 
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install wheel
+
+    - name: Creating archive
+      run: |
+        find . -name \__pycache__ -exec rm -rv {} +
+        tar cvf chat_bot.tar ./*     
+        
+    - name: Uploading prepared files
+      uses: marcodallasanta/ssh-scp-deploy@v1.1.0
+      with:
+        local: 'chat_bot.tar'                               # Local file path - REQUIRED false - DEFAULT ./
+        remote: '~/'                                                 # Remote file path - REQUIRED false - DEFAULT ~/
+        host: ${{secrets.PROD_IP}}
+        port: ${{secrets.PORT}}                                      # Remote server address - REQUIRED true
+        user: ${{secrets.PROD_USERNAME}}                             # Remote server user - REQUIRED true
+        key: ${{secrets.SSH_TO_SERVER}}                              # Remote server private key - REQUIRED at least one of "password" or "key"
+        pre_upload: echo "This will be executed before the upload!"  # Command to run via ssh before scp upload - REQUIRED false
+        post_upload: tar -xvf chat_bot.tar --overwrite --dir ~/chat_bot
+        ssh_options: -o StrictHostKeyChecking=no                     # A set of ssh_option separated by -o - REQUIRED false - DEFAULT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+        scp_options: -v               
+   
+    - name: Post upload script
+      uses: cross-the-world/ssh-pipeline@master
+      env:
+        WELCOME: "Welcome to the server"
+      with:
+        host: ${{secrets.PROD_IP}}
+        port: ${{secrets.PORT}}
+        user: ${{secrets.PROD_USERNAME}}
+        key:  ${{secrets.SSH_TO_SERVER}}
+        connect_timeout: 10s
+        script: |
+          cp ~/chat_bot/post_upload.sh ~
+          chmod +x ~/post_upload.sh
+          sudo /home/ubuntu/post_upload.sh
