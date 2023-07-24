@@ -1,0 +1,13 @@
+[Unit]
+Description=Chatbot 
+
+[Service]
+User=root
+WorkingDirectory=/home/ubuntu/chat_bot/
+ExecStart=/usr/bin/python3 main.py
+StartLimitInterval=60
+StartLimitBurst=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
