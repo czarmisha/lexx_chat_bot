@@ -5,3 +5,4 @@ __pycahe__/
 */*/__pycahe__/
 *.db
 */*.db
+.DS_Store
