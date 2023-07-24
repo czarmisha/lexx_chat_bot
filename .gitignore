@@ -3,3 +3,5 @@ venv/
 __pycahe__/
 */__pycahe__/
 */*/__pycahe__/
+*.db
+*/*.db
