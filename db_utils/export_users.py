@@ -7,7 +7,7 @@ sys.path.insert(0, parent_dir)
 from db.models import User, Session, engine
 from sqlalchemy import select
 
-df = pd.read_excel('flatfiles/test_users.xlsx')
+df = pd.read_excel('flatfiles/users.xlsx')
 if not df.empty:
     session = Session(bind=engine)
     

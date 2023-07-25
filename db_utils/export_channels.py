@@ -7,7 +7,7 @@ sys.path.insert(0, parent_dir)
 from db.models import Channel, Session, engine
 from sqlalchemy import select
 
-df = pd.read_excel('flatfiles/test_channels.xlsx')
+df = pd.read_excel('flatfiles/channels.xlsx')
 if not df.empty:
     session = Session(bind=engine)
     channels = df['Channel name'].to_list()

@@ -7,7 +7,7 @@ sys.path.insert(0, parent_dir)
 from db.models import User, Topic, Keyword, Session, engine
 from sqlalchemy import select
 
-df = pd.read_excel('flatfiles/test_keywords.xlsx')
+df = pd.read_excel('flatfiles/keywords.xlsx')
 if not df.empty:
     session = Session(bind=engine)
     topics = df.columns.to_list()
