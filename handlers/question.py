@@ -184,10 +184,8 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     topic_id = data[1]
     stmt = select(Topic).where(Topic.id==int(topic_id))
     topic = session.execute(stmt).scalars().first()
-    # TODO: если топик особый (требуется другой ответ типа ссылки и тд) то добавить этот функционал
     tashkent_user_id = data[2]
     kyiv_user_id = data[3]
-    topic_name = data[4]
     if author.city == 'Tashkent':
         stmt = select(User).where(User.id==int(tashkent_user_id))
     else:
@@ -211,7 +209,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text="Произошла ошибка, обратитесь к администратору")
         return ConversationHandler.END
     
-    if topic_name == 'Каналы':
+    if topic.name == 'Каналы':
         context.chat_data['manager_chat_id'] = manager.chat_id
         context.chat_data['author_name'] = author.name
         context.chat_data['author_tg_id'] = author.tg_id
@@ -244,7 +242,7 @@ async def clarification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = manager.chat_id
     text = f"Новый вопрос от {author.name}({author.tg_id})\n\n" \
             f"{analyze.question}\n\n" \
-            f"Тема: {topic_name}"
+            f"Тема: {topic.name}"
     await context.bot.send_message(chat_id=chat_id, text=text)
     question = Question(date=datetime.date.today(),
                         text=analyze.question,
