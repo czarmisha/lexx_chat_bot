@@ -23,7 +23,7 @@ class Topic(Base):
     __tablename__ = 'topic'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
+    name = Column(String(50), nullable=True)
 
     tashkent_user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
     kyiv_user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
@@ -42,10 +42,11 @@ class User(Base):
     __tablename__ = 'user'
 
     id = Column(Integer, primary_key=True)
-    tg_id = Column(BigInteger, nullable=False)
+    tg_id = Column(BigInteger, nullable=True)
     chat_id = Column(BigInteger, nullable=True)
     city = Column(String(80), nullable=True)
-    name = Column(String(80), nullable=False)
+    name = Column(String(80), nullable=True)
+    type = Column(String(50), nullable=True)
 
     tashkent_topics = relationship("Topic", back_populates="tashkent_user", foreign_keys="Topic.tashkent_user_id")
     kyiv_topics = relationship("Topic", back_populates="kyiv_user", foreign_keys="Topic.kyiv_user_id")
@@ -59,7 +60,7 @@ class Keyword(Base):
     __tablename__ = 'keyword'
 
     id = Column(Integer, primary_key=True)
-    value = Column(String(255), nullable=False)
+    value = Column(String(255), nullable=True)
     
     topic_id = Column(Integer, ForeignKey("topic.id"))
     topic = relationship("Topic", back_populates="keyword")
@@ -72,8 +73,8 @@ class Question(Base):
     __tablename__ = 'question'
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, nullable=False)
-    text = Column(String(255), nullable=False)
+    date = Column(DateTime, nullable=True)
+    text = Column(String(255), nullable=True)
 
     topic_id = Column(Integer, ForeignKey("topic.id"))
     topic = relationship("Topic", back_populates="question")
@@ -88,7 +89,7 @@ class Channel(Base):
     __tablename__ = 'channel'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=True)
 
     def __repr__(self):
         return f'<Channel {self.name}>'

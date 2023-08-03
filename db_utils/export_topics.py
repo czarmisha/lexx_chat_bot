@@ -24,7 +24,7 @@ if not df.empty:
 
         tashkent_manager = None
         if pd.notna(tashkent_manager_td_id):
-            stmt = select(User).where(User.tg_id==tashkent_manager_td_id)
+            stmt = select(User).where(User.tg_id==int(tashkent_manager_td_id))
             tashkent_manager = session.execute(stmt).scalars().first()
             if not tashkent_manager:
                 tashkent_manager = User(
@@ -32,34 +32,43 @@ if not df.empty:
                     name=tashkent_manager_name,
                     city='Tashkent'
                 )
-                session.add(tashkent_manager)
-                session.commit()
-                print(f"create Tashkent manager {tashkent_manager_name} {tashkent_manager_td_id} for topic {name}")
+                print(f"creating Tashkent manager {tashkent_manager_name} {tashkent_manager_td_id} for topic {name}")
+            else:
+                tashkent_manager.name = tashkent_manager_name
+                tashkent_manager.city = 'Tashkent'
+                print(f"updating Tashkent manager {tashkent_manager_name} {tashkent_manager_td_id} for topic {name}")
+
+            session.add(tashkent_manager)
+            session.commit()
         
         kyiv_manager = None
         if pd.notna(kyiv_manager_td_id):
-            stmt = select(User).where(User.tg_id==kyiv_manager_td_id)
+            stmt = select(User).where(User.tg_id==int(kyiv_manager_td_id))
             kyiv_manager = session.execute(stmt).scalars().first()
             if not kyiv_manager:
                 kyiv_manager = User(
                     tg_id=kyiv_manager_td_id,
                     name=kyiv_manager_name,
-                    city='Tashkent'
+                    city='Kyiv'
                 )
-                session.add(kyiv_manager)
-                session.commit()
                 print(f"create Kyiv manager {kyiv_manager_name} {kyiv_manager_td_id} for topic {name}")
+            else:
+                kyiv_manager.name = kyiv_manager_name
+                kyiv_manager.city = 'Kyiv'
+                print(f"updating Kyiv manager {tashkent_manager_name} {tashkent_manager_td_id} for topic {name}")
+
+            session.add(kyiv_manager)
+            session.commit()
 
         
         stmt = select(Topic).where(Topic.name==name)
-        result = session.execute(stmt).scalars().all()
-        if result:
-            print(f'Тема {name} уже существует')
-            result.tashkent_user_id = tashkent_manager.id if tashkent_manager else None
-            result.kyiv_user_id = kyiv_manager.id if kyiv_manager else None
-            result.url_answer = url_answer
-            session.add(result)
-            session.commit()
+        topic = session.execute(stmt).scalars().first()
+        if topic:
+            print(f'Topic {name} already exist')
+            print(f'Updating topic')
+            topic.tashkent_user_id = tashkent_manager.id if tashkent_manager else None
+            topic.kyiv_user_id = kyiv_manager.id if kyiv_manager else None
+            topic.url_answer = url_answer
         else:
             topic = Topic(
                 name=name,
@@ -67,8 +76,9 @@ if not df.empty:
                 kyiv_user_id=kyiv_manager.id if kyiv_manager else None,
                 url_answer=url_answer
             )
-            session.add(topic)
-            session.commit()
-            print(f'create topic {name}')
+            print(f'Creating topic {name}')
+
+        session.add(topic)
+        session.commit()
                 
     session.close()

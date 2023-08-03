@@ -4,7 +4,7 @@ import os, inspect, sys
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
 sys.path.insert(0, parent_dir) 
-from db.models import User, Topic, Keyword, Session, engine
+from db.models import Topic, Keyword, Session, engine
 from sqlalchemy import select
 
 df = pd.read_excel('flatfiles/keywords.xlsx')
@@ -23,7 +23,7 @@ if not df.empty:
             stmt = select(Topic).where(Topic.name==topic)
             curr_topic = session.execute(stmt).scalars().first()
             if not curr_topic:
-                print(f'Тема {topic} не существует')
+                print(f'Topic {topic} does not exist')
                 continue
             stmt = select(Keyword).where(Keyword.value==keyword, Keyword.topic_id==curr_topic.id)
             curr_keyword = session.execute(stmt).scalars().first()
@@ -32,5 +32,7 @@ if not df.empty:
                 session.add(curr_keyword)
                 session.commit()
                 print(f'create keyword {keyword} for topic {topic}')
+            else:
+                print(f'Keyword {keyword} already exist')
 
     session.close()

@@ -14,15 +14,26 @@ if not df.empty:
     for index, row in df.iterrows():
         tg_id = int(row['Telegram Id'])
         name = row['Name']
+        city = row['Office']
+        type = row['Type']
 
         stmt = select(User).where(User.tg_id==int(tg_id))
-        result = session.execute(stmt).scalars().all()
-        if result:
-            print(f'{name} {tg_id} уже существует')
+        user = session.execute(stmt).scalars().first()
+        if user:
+            print(f'{name} {tg_id} уже существует. Обновляю')
+            user.name = name
+            user.city = city
+            user.type = type
         else:
-            user = User(tg_id=tg_id, name=name)
-            session.add(user)
-            session.commit()
-            print(f'create {name} {tg_id}')
+            user = User(
+                tg_id=tg_id,
+                name=name,
+                city=city,
+                type=type
+            )
+            print(f'Создаю {name} {tg_id}')
+        
+        session.add(user)
+        session.commit()
 
     session.close()
