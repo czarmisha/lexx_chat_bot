@@ -70,7 +70,15 @@ async def question(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Произошел сбой в программе. Сообщите администратору")
         return ConversationHandler.END
 
-    analyze.set_question(update.message.text)
+    mess_text = update.message.text
+    if mess_text.lower() in ['привет', 'hi', 'hello']:
+        await update.message.reply_html(
+            f"Привет-привет!\nЗадайте мне свой вопрос",
+            reply_markup=ForceReply(selective=True),
+        )
+        return QUESTION
+
+    analyze.set_question(mess_text)
     topics = analyze.do_analyze()
     if not topics:
         if author.city == 'Tashkent':
